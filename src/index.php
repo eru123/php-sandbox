@@ -1,41 +1,41 @@
 <?php
 
-require_once __DIR__ . '/lib.php';
+require_once __DIR__ . '/autoload.php';
 
-define('__SCRIPTS__', __DIR__ . '/../scripts');
-set_error_handler('error_handler', E_ALL);
-
-// $_SERVER['REQUEST_URI'] = '/api/v1/auth/login';
 // $_SERVER['REQUEST_METHOD'] = 'GET';
+// $_SERVER['REQUEST_URI'] = '/';
 
-get('/', fn() => create_isolated_file('test', "<?php\n\necho \"hello world\";"));
+$file = realpath(__DIR__ . '/../scripts/test.php');
+$f = fopen($file, 'r');
+$contents = fread($f, filesize($file));
 
-function create_isolated_file($key, $code)
-{
-    $tmp = tempnam(sys_get_temp_dir(), 'isolated');
-    file_put_contents($tmp, $code);
-    // get php executable path
-    $php = trim(shell_exec('which php'));
-    // get php.ini path
-    $ini = trim(shell_exec('php -i | grep "Loaded Configuration File" | cut -d" " -f 5'));
-    // get php.ini dir
-    $dir = trim(shell_exec('php -i | grep "Scan this dir for additional .ini files" | cut -d" " -f 10'));
-    // get php.ini files
-    // $ini = array_merge([$ini], glob($dir . '/*.ini'));
-    // get php.ini directives
-    // $ini = array_map(fn ($file) => trim(shell_exec("cat $file | grep -E '^[a-zA-Z_]+[a-zA-Z0-9_]*' | cut -d' ' -f 1")), $ini);
-    // get php.ini directives
-    // $ini = array_filter($ini, fn ($ini) => !empty($ini));
-    // get php.ini directives
-    // $ini = array_unique($ini);
-    // get php.ini directives
-    // $ini = array_map(fn ($ini) => "-d $ini", $ini);
-    // get php.ini directives
-    // $ini = implode(' ', $ini);
-    echo '<pre>';
-    var_dump($ini);
-    var_dump($php);
-    var_dump($tmp);
-    var_dump($dir);
-    echo '</pre>';
-}
+post('/', function () {
+    $data = json_data();
+    if (!isset($data['code']) || empty($data['code'])) {
+        throw new Exception('Empty code', 400);
+    }
+
+    $headers = getallheaders();
+    // header('Content-Type: text/plain');
+
+    $sandbox_id = acfg($headers, 'X-Ctrl-Session-Id', session_id());
+
+    return sandbox($sandbox_id, (string) $data['code'], [
+        'max_execution_time' => int_minmax((int) acfg($headers, 'X-Ctrl-Max-Execution-Time', 1), 1, 30),
+        'memory_limit' => int_minmax((int) acfg($headers, 'X-Ctrl-Memory-Limit'), 2, 128, 4) . 'M',
+    ], [
+        'scripts' => __SCRIPTS__,
+        'shared' => __SHARED__,
+        'php' => 'php',
+    ]);
+});
+
+
+any('/.*', function () {
+    return response_handler([
+        'error' => [
+            'code' => 404,
+            'message' => 'Not found'
+        ]
+    ], 404);
+});
