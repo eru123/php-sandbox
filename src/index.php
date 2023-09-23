@@ -2,10 +2,6 @@
 
 require_once __DIR__ . '/autoload.php';
 
-$file = realpath(__DIR__ . '/../scripts/test.php');
-$f = fopen($file, 'r');
-$contents = fread($f, filesize($file));
-
 post('/', function () {
     $data = json_data();
     if (!isset($data['code']) || empty($data['code'])) {
@@ -26,11 +22,9 @@ post('/', function () {
 });
 
 
-any('/.*', function () {
-    return response_handler([
-        'error' => [
-            'code' => 404,
-            'message' => 'Not found'
-        ]
-    ], 404);
-});
+any('/.*', fn () => response_handler([
+    'error' => [
+        'code' => 404,
+        'message' => 'Not found'
+    ]
+], 404));
