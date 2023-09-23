@@ -2,9 +2,6 @@
 
 require_once __DIR__ . '/autoload.php';
 
-// $_SERVER['REQUEST_METHOD'] = 'GET';
-// $_SERVER['REQUEST_URI'] = '/';
-
 $file = realpath(__DIR__ . '/../scripts/test.php');
 $f = fopen($file, 'r');
 $contents = fread($f, filesize($file));
@@ -16,8 +13,6 @@ post('/', function () {
     }
 
     $headers = getallheaders();
-    // header('Content-Type: text/plain');
-
     $sandbox_id = acfg($headers, 'X-Ctrl-Session-Id', session_id());
 
     return sandbox($sandbox_id, (string) $data['code'], [
